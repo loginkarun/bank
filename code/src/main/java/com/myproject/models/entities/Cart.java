@@ -2,7 +2,6 @@ package com.myproject.models.entities;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -14,7 +13,6 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Cart {
 
     @Id
@@ -24,8 +22,7 @@ public class Cart {
     @Column(nullable = false, unique = true)
     private Long userId;
 
-    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @Builder.Default
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();
 
     @Column(nullable = false)
@@ -45,13 +42,7 @@ public class Cart {
 
     public void recalculateTotal() {
         this.totalPrice = items.stream()
-                .mapToDouble(CartItem::getSubtotal)
-                .sum();
-    }
-
-    public Integer getItemCount() {
-        return items.stream()
-                .mapToInt(CartItem::getQuantity)
+                .mapToDouble(item -> item.getPrice() * item.getQuantity())
                 .sum();
     }
 }
