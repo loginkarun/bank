@@ -2,7 +2,6 @@ package com.myproject.models.entities;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,7 +10,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class CartItem {
 
     @Id
@@ -26,15 +24,18 @@ public class CartItem {
     private Long productId;
 
     @Column(nullable = false)
-    private String productName;
-
-    @Column(nullable = false)
-    private Integer quantity;
+    private String name;
 
     @Column(nullable = false)
     private Double price;
 
-    public Double getSubtotal() {
-        return price * quantity;
+    @Column(nullable = false)
+    private Integer quantity;
+
+    public CartItem(Long productId, String name, Double price, Integer quantity) {
+        this.productId = productId;
+        this.name = name;
+        this.price = price;
+        this.quantity = quantity;
     }
 }
