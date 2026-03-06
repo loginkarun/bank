@@ -1,1 +1,1 @@
-{"status":"failure","action_url":"https://github.com/loginkarun/bank/actions/runs/22752216472","build_logs":"Build failed - see action URL for details","error":"Build verification failed","repo":"bank","branch":"main","attempt":2}
+{"status":"failure","action_url":"https://github.com/loginkarun/bank/actions/runs/22752395020","build_logs":"Build failed - see action URL for details","error":"Build execution failed","repo":"bank","branch":"main","attempt":2}
