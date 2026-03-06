@@ -2,27 +2,45 @@ openapi: 3.0.3
 info:
   title: bank API
   version: 1.0.0
-  description: Generated from LLD batch - Shopping Cart Management API
+  description: Generated from LLD batch in pipeline SCRUM-11692 - Shopping Cart Add Item Feature
+  contact:
+    name: API Support
+    email: api-support@bank.com
 servers:
-  - url: https://example.com
+  - url: https://api.bank.com
     description: Production server
+  - url: https://staging-api.bank.com
+    description: Staging server
 tags:
-  - name: Cart Management
-    description: Operations for managing shopping cart
+  - name: Shopping Cart
+    description: Operations related to shopping cart management
 paths:
   /api/cart/add:
     post:
       tags:
-        - Cart Management
-      summary: Add item to shopping cart
-      description: Adds a product to the user's shopping cart. If the product already exists in the cart, increments the quantity.
-      operationId: SCRUM-11692_addToCart_post
+        - Shopping Cart
+      summary: Add item to cart
+      description: Adds a product to the shopping cart. If the item already exists, increments the quantity.
+      operationId: SCRUM-11692_add_item_to_cart_post
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CartItemAddRequest'
+            examples:
+              addNewItem:
+                summary: Add new item to cart
+                value:
+                  productId: 12345
+                  quantity: 1
+              addExistingItem:
+                summary: Add existing item (increments quantity)
+                value:
+                  productId: 12345
+                  quantity: 2
       responses:
         '201':
           description: Item successfully added to cart
@@ -30,39 +48,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CartResponse'
+              examples:
+                success:
+                  summary: Successful add to cart
+                  value:
+                    items:
+                      - productId: 12345
+                        name: Sample Product
+                        price: 29.99
+                        quantity: 1
+                    totalPrice: 29.99
         '400':
-          description: Invalid request - validation failed
+          description: Validation error - Invalid request data
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validationError:
+                  summary: Invalid quantity
+                  value:
+                    timestamp: '2024-01-15T10:30:00Z'
+                    traceId: abc-123-def
+                    errorCode: VALIDATION_ERROR
+                    message: Invalid quantity or out of stock
+                    details:
+                      - field: quantity
+                        issue: Must be greater than 0 and less than or equal to stock
         '404':
           description: Product not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                productNotFound:
+                  summary: Product does not exist
+                  value:
+                    timestamp: '2024-01-15T10:30:00Z'
+                    traceId: abc-123-def
+                    errorCode: PRODUCT_NOT_FOUND
+                    message: Product not found
+                    details:
+                      - field: productId
+                        issue: Product does not exist in database
         '409':
-          description: Product out of stock
+          description: Out of stock
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                outOfStock:
+                  summary: Product out of stock
+                  value:
+                    timestamp: '2024-01-15T10:30:00Z'
+                    traceId: abc-123-def
+                    errorCode: OUT_OF_STOCK
+                    message: Product is out of stock
+                    details:
+                      - field: productId
+                        issue: Insufficient stock available
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-      security:
-        - sessionToken: []
   /api/cart:
     get:
       tags:
-        - Cart Management
-      summary: Get shopping cart
-      description: Retrieves the current user's shopping cart with all items, quantities, prices, and total.
-      operationId: SCRUM-11692_getCart_get
+        - Shopping Cart
+      summary: Get cart
+      description: Retrieves the current user's shopping cart with all items and total price
+      operationId: SCRUM-11692_get_cart_get
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Cart retrieved successfully
@@ -70,8 +131,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CartResponse'
+              examples:
+                cartWithItems:
+                  summary: Cart with multiple items
+                  value:
+                    items:
+                      - productId: 12345
+                        name: Sample Product A
+                        price: 29.99
+                        quantity: 2
+                      - productId: 67890
+                        name: Sample Product B
+                        price: 49.99
+                        quantity: 1
+                    totalPrice: 109.97
+                emptyCart:
+                  summary: Empty cart
+                  value:
+                    items: []
+                    totalPrice: 0.00
         '401':
-          description: Unauthorized - invalid session
+          description: Unauthorized - Invalid or missing JWT token
           content:
             application/json:
               schema:
@@ -82,106 +162,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-      security:
-        - sessionToken: []
+  /api/cart/item:
     delete:
       tags:
-        - Cart Management
-      summary: Clear shopping cart
-      description: Removes all items from the user's shopping cart.
-      operationId: SCRUM-11692_clearCart_delete
-      responses:
-        '200':
-          description: Cart cleared successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CartResponse'
-        '401':
-          description: Unauthorized - invalid session
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-      security:
-        - sessionToken: []
-  /api/cart/item/{productId}:
-    delete:
-      tags:
-        - Cart Management
+        - Shopping Cart
       summary: Remove item from cart
-      description: Removes a specific product from the shopping cart.
-      operationId: SCRUM-11692_removeFromCart_delete
-      parameters:
-        - name: productId
-          in: path
-          required: true
-          description: ID of the product to remove from cart
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: Item removed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CartResponse'
-        '404':
-          description: Product not found in cart
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized - invalid session
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+      description: Removes a specific product from the shopping cart
+      operationId: SCRUM-11692_remove_item_from_cart_delete
       security:
-        - sessionToken: []
-    put:
-      tags:
-        - Cart Management
-      summary: Update item quantity in cart
-      description: Updates the quantity of a specific product in the shopping cart.
-      operationId: SCRUM-11692_updateQuantity_put
-      parameters:
-        - name: productId
-          in: path
-          required: true
-          description: ID of the product to update
-          schema:
-            type: integer
-            format: int64
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateQuantityRequest'
+              $ref: '#/components/schemas/CartItemRemoveRequest'
+            examples:
+              removeItem:
+                summary: Remove item from cart
+                value:
+                  productId: 12345
       responses:
         '200':
-          description: Quantity updated successfully
+          description: Item successfully removed from cart
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CartResponse'
+              examples:
+                success:
+                  summary: Cart after item removal
+                  value:
+                    items:
+                      - productId: 67890
+                        name: Sample Product B
+                        price: 49.99
+                        quantity: 1
+                    totalPrice: 49.99
         '400':
-          description: Invalid quantity or out of stock
+          description: Validation error
           content:
             application/json:
               schema:
@@ -192,8 +211,74 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized - invalid session
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Shopping Cart
+      summary: Update item quantity
+      description: Updates the quantity of a specific product in the shopping cart
+      operationId: SCRUM-11692_update_item_quantity_put
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemUpdateRequest'
+            examples:
+              updateQuantity:
+                summary: Update item quantity
+                value:
+                  productId: 12345
+                  quantity: 5
+      responses:
+        '200':
+          description: Item quantity successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+              examples:
+                success:
+                  summary: Cart after quantity update
+                  value:
+                    items:
+                      - productId: 12345
+                        name: Sample Product A
+                        price: 29.99
+                        quantity: 5
+                    totalPrice: 149.95
+        '400':
+          description: Validation error - Invalid quantity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidQuantity:
+                  summary: Quantity validation failed
+                  value:
+                    timestamp: '2024-01-15T10:30:00Z'
+                    traceId: abc-123-def
+                    errorCode: VALIDATION_ERROR
+                    message: Invalid quantity or out of stock
+                    details:
+                      - field: quantity
+                        issue: Must be greater than 0 and less than or equal to stock
+        '404':
+          description: Product not found in cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Out of stock - Requested quantity exceeds available stock
           content:
             application/json:
               schema:
@@ -204,9 +289,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-      security:
-        - sessionToken: []
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token-based authentication. Include the token in the Authorization header as 'Bearer {token}'
   schemas:
     CartItemAddRequest:
       type: object
@@ -217,87 +306,92 @@ components:
         productId:
           type: integer
           format: int64
-          description: ID of the product to add to cart
+          description: Unique identifier of the product to add to cart
           example: 12345
         quantity:
           type: integer
-          minimum: 1
+          format: int32
           description: Quantity of the product to add
+          minimum: 1
           example: 1
-        userId:
-          type: integer
-          format: int64
-          description: ID of the user (from session)
-          example: 67890
-    UpdateQuantityRequest:
+      description: Request body for adding an item to the shopping cart
+    CartItemRemoveRequest:
       type: object
       required:
+        - productId
+      properties:
+        productId:
+          type: integer
+          format: int64
+          description: Unique identifier of the product to remove from cart
+          example: 12345
+      description: Request body for removing an item from the shopping cart
+    CartItemUpdateRequest:
+      type: object
+      required:
+        - productId
         - quantity
       properties:
+        productId:
+          type: integer
+          format: int64
+          description: Unique identifier of the product to update
+          example: 12345
         quantity:
           type: integer
-          minimum: 1
+          format: int32
           description: New quantity for the product
+          minimum: 1
           example: 3
+      description: Request body for updating item quantity in the shopping cart
     CartResponse:
       type: object
+      required:
+        - items
+        - totalPrice
       properties:
-        id:
-          type: integer
-          format: int64
-          description: Cart ID
-          example: 1
-        userId:
-          type: integer
-          format: int64
-          description: User ID who owns the cart
-          example: 67890
         items:
           type: array
-          description: List of items in the cart
+          description: List of items currently in the shopping cart
           items:
             $ref: '#/components/schemas/CartItem'
         totalPrice:
           type: number
           format: double
-          description: Total price of all items in cart
-          example: 299.99
-        itemCount:
-          type: integer
-          description: Total number of items in cart
-          example: 5
+          description: Total price of all items in the cart
+          minimum: 0
+          example: 149.97
+      description: Response containing cart details with items and total price
     CartItem:
       type: object
+      required:
+        - productId
+        - name
+        - price
+        - quantity
       properties:
-        id:
-          type: integer
-          format: int64
-          description: Cart item ID
-          example: 101
         productId:
           type: integer
           format: int64
-          description: Product ID
+          description: Unique identifier of the product
           example: 12345
-        productName:
+        name:
           type: string
           description: Name of the product
-          example: Wireless Mouse
-        quantity:
-          type: integer
-          minimum: 1
-          description: Quantity of this product in cart
-          example: 2
+          example: Sample Product
         price:
           type: number
           format: double
-          description: Unit price of the product
+          description: Price per unit of the product
+          minimum: 0
           example: 29.99
-        subtotal:
-          type: number
-          format: double
-          description: Subtotal for this item (quantity * price)
-          example: 59.98
+        quantity:
+          type: integer
+          format: int32
+          description: Quantity of this product in the cart
+          minimum: 1
+          example: 2
+      description: Individual item in the shopping cart
     ErrorResponse:
       type: object
       required:
@@ -309,67 +403,35 @@ components:
         timestamp:
           type: string
           format: date-time
-          description: Timestamp when error occurred
-          example: 2024-01-15T10:30:00Z
+          description: Timestamp when the error occurred
+          example: '2024-01-15T10:30:00Z'
         traceId:
           type: string
-          description: Unique trace ID for debugging
-          example: abc123-def456-ghi789
+          description: Unique identifier for tracing the error
+          example: abc-123-def-456
         errorCode:
           type: string
           description: Application-specific error code
-          example: PRODUCT_NOT_FOUND
+          example: VALIDATION_ERROR
         message:
           type: string
           description: Human-readable error message
-          example: Product not found
+          example: Invalid quantity or out of stock
         details:
           type: array
-          description: Additional error details
+          description: Detailed error information
           items:
             $ref: '#/components/schemas/ErrorDetail'
+      description: Standard error response structure
     ErrorDetail:
       type: object
       properties:
         field:
           type: string
           description: Field name that caused the error
-          example: productId
+          example: quantity
         issue:
           type: string
-          description: Description of the issue
-          example: Product does not exist in database
-  securitySchemes:
-    sessionToken:
-      type: apiKey
-      in: header
-      name: Authorization
-      description: Session token for authenticated requests (JWT or HTTP session)
-  parameters:
-    productIdParam:
-      name: productId
-      in: path
-      required: true
-      description: Product identifier
-      schema:
-        type: integer
-        format: int64
-  responses:
-    UnauthorizedError:
-      description: Authentication information is missing or invalid
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    NotFoundError:
-      description: The specified resource was not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    ValidationError:
-      description: Validation failed for the request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          description: Description of the issue with the field
+          example: Must be greater than 0 and less than or equal to stock
+      description: Detailed information about a specific error
