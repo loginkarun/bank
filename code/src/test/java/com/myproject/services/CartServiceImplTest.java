@@ -1,17 +1,15 @@
 package com.myproject.services;
 
+import com.myproject.exceptions.CartOperationException;
 import com.myproject.exceptions.OutOfStockException;
 import com.myproject.exceptions.ProductNotFoundException;
-import com.myproject.models.dtos.CartItemAddRequest;
-import com.myproject.models.dtos.CartResponse;
-import com.myproject.models.dtos.UpdateQuantityRequest;
+import com.myproject.models.dtos.*;
 import com.myproject.models.entities.Cart;
 import com.myproject.models.entities.CartItem;
 import com.myproject.models.entities.Product;
-import com.myproject.models.repositories.CartItemRepository;
 import com.myproject.models.repositories.CartRepository;
-import com.myproject.models.repositories.ProductRepository;
 import com.myproject.services.impl.CartServiceImpl;
+import com.myproject.services.interfaces.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +22,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,153 +32,128 @@ class CartServiceImplTest {
     private CartRepository cartRepository;
 
     @Mock
-    private CartItemRepository cartItemRepository;
-
-    @Mock
-    private ProductRepository productRepository;
+    private ProductService productService;
 
     @InjectMocks
     private CartServiceImpl cartService;
 
-    private Product product;
-    private Cart cart;
-    private CartItem cartItem;
+    private Product testProduct;
+    private Cart testCart;
+    private CartItemAddRequest addRequest;
 
     @BeforeEach
     void setUp() {
-        product = Product.builder()
-                .id(1L)
-                .name("Wireless Mouse")
-                .price(29.99)
-                .stock(50)
-                .available(true)
-                .build();
-
-        cart = Cart.builder()
-                .id(1L)
-                .userId(1L)
-                .items(new ArrayList<>())
-                .totalPrice(0.0)
-                .build();
-
-        cartItem = CartItem.builder()
-                .id(1L)
-                .cart(cart)
-                .productId(1L)
-                .productName("Wireless Mouse")
-                .quantity(1)
-                .price(29.99)
-                .build();
+        testProduct = new Product(1L, "Test Product", 29.99, 10);
+        testCart = new Cart();
+        testCart.setId(1L);
+        testCart.setUserId(1L);
+        testCart.setItems(new ArrayList<>());
+        testCart.setTotalPrice(0.0);
+        
+        addRequest = new CartItemAddRequest(1L, 2);
     }
 
     @Test
-    void testAddToCart_NewItem_Success() {
-        CartItemAddRequest request = new CartItemAddRequest(1L, 2, 1L);
+    void testAddItemToCart_NewItem_Success() {
+        when(productService.getProductById(1L)).thenReturn(testProduct);
+        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(testCart));
+        when(cartRepository.save(any(Cart.class))).thenReturn(testCart);
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartIdAndProductId(1L, 1L)).thenReturn(Optional.empty());
-        when(cartItemRepository.save(any(CartItem.class))).thenReturn(cartItem);
-        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
-
-        CartResponse response = cartService.addToCart(request, 1L);
+        CartResponse response = cartService.addItemToCart(1L, addRequest);
 
         assertNotNull(response);
-        assertEquals(1L, response.getUserId());
-        verify(cartItemRepository, times(1)).save(any(CartItem.class));
+        verify(productService).validateProductAvailability(1L, 2);
+        verify(cartRepository).save(any(Cart.class));
     }
 
     @Test
-    void testAddToCart_ProductNotFound() {
-        CartItemAddRequest request = new CartItemAddRequest(999L, 1, 1L);
-
-        when(productRepository.findById(999L)).thenReturn(Optional.empty());
+    void testAddItemToCart_ProductNotFound_ThrowsException() {
+        doThrow(new ProductNotFoundException(1L))
+            .when(productService).validateProductAvailability(anyLong(), anyInt());
 
         assertThrows(ProductNotFoundException.class, () -> {
-            cartService.addToCart(request, 1L);
+            cartService.addItemToCart(1L, addRequest);
         });
     }
 
     @Test
-    void testAddToCart_OutOfStock() {
-        CartItemAddRequest request = new CartItemAddRequest(1L, 100, 1L);
-
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    void testAddItemToCart_OutOfStock_ThrowsException() {
+        doThrow(new OutOfStockException(1L))
+            .when(productService).validateProductAvailability(anyLong(), anyInt());
 
         assertThrows(OutOfStockException.class, () -> {
-            cartService.addToCart(request, 1L);
+            cartService.addItemToCart(1L, addRequest);
         });
     }
 
     @Test
-    void testAddToCart_IncrementExistingItem() {
-        CartItemAddRequest request = new CartItemAddRequest(1L, 1, 1L);
-        cart.getItems().add(cartItem);
-
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartIdAndProductId(1L, 1L)).thenReturn(Optional.of(cartItem));
-        when(cartItemRepository.save(any(CartItem.class))).thenReturn(cartItem);
-        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
-
-        CartResponse response = cartService.addToCart(request, 1L);
-
-        assertNotNull(response);
-        verify(cartItemRepository, times(1)).save(any(CartItem.class));
-    }
-
-    @Test
-    void testGetCart_Success() {
-        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(cart));
+    void testGetCart_ExistingCart_Success() {
+        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(testCart));
 
         CartResponse response = cartService.getCart(1L);
 
         assertNotNull(response);
-        assertEquals(1L, response.getUserId());
-    }
-
-    @Test
-    void testRemoveFromCart_Success() {
-        cart.getItems().add(cartItem);
-
-        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartIdAndProductId(1L, 1L)).thenReturn(Optional.of(cartItem));
-        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
-
-        CartResponse response = cartService.removeFromCart(1L, 1L);
-
-        assertNotNull(response);
-        verify(cartItemRepository, times(1)).delete(cartItem);
-    }
-
-    @Test
-    void testUpdateQuantity_Success() {
-        UpdateQuantityRequest request = new UpdateQuantityRequest(3);
-        cart.getItems().add(cartItem);
-
-        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartIdAndProductId(1L, 1L)).thenReturn(Optional.of(cartItem));
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(cartItemRepository.save(any(CartItem.class))).thenReturn(cartItem);
-        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
-
-        CartResponse response = cartService.updateQuantity(1L, request, 1L);
-
-        assertNotNull(response);
-        verify(cartItemRepository, times(1)).save(any(CartItem.class));
-    }
-
-    @Test
-    void testClearCart_Success() {
-        cart.getItems().add(cartItem);
-
-        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
-
-        CartResponse response = cartService.clearCart(1L);
-
-        assertNotNull(response);
-        assertEquals(0, response.getItemCount());
         assertEquals(0.0, response.getTotalPrice());
+        assertTrue(response.getItems().isEmpty());
+    }
+
+    @Test
+    void testGetCart_NewCart_CreatesEmptyCart() {
+        when(cartRepository.findByUserId(1L)).thenReturn(Optional.empty());
+
+        CartResponse response = cartService.getCart(1L);
+
+        assertNotNull(response);
+        assertEquals(0.0, response.getTotalPrice());
+        assertTrue(response.getItems().isEmpty());
+    }
+
+    @Test
+    void testRemoveItemFromCart_Success() {
+        CartItem item = new CartItem(1L, "Test Product", 29.99, 2);
+        testCart.addItem(item);
+        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(testCart));
+        when(cartRepository.save(any(Cart.class))).thenReturn(testCart);
+
+        CartItemRemoveRequest removeRequest = new CartItemRemoveRequest(1L);
+        CartResponse response = cartService.removeItemFromCart(1L, removeRequest);
+
+        assertNotNull(response);
+        verify(cartRepository).save(any(Cart.class));
+    }
+
+    @Test
+    void testRemoveItemFromCart_CartNotFound_ThrowsException() {
+        when(cartRepository.findByUserId(1L)).thenReturn(Optional.empty());
+
+        CartItemRemoveRequest removeRequest = new CartItemRemoveRequest(1L);
+        assertThrows(CartOperationException.class, () -> {
+            cartService.removeItemFromCart(1L, removeRequest);
+        });
+    }
+
+    @Test
+    void testUpdateItemQuantity_Success() {
+        CartItem item = new CartItem(1L, "Test Product", 29.99, 2);
+        testCart.addItem(item);
+        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(testCart));
+        when(cartRepository.save(any(Cart.class))).thenReturn(testCart);
+
+        CartItemUpdateRequest updateRequest = new CartItemUpdateRequest(1L, 5);
+        CartResponse response = cartService.updateItemQuantity(1L, updateRequest);
+
+        assertNotNull(response);
+        verify(productService).validateProductAvailability(1L, 5);
+        verify(cartRepository).save(any(Cart.class));
+    }
+
+    @Test
+    void testUpdateItemQuantity_ProductNotInCart_ThrowsException() {
+        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(testCart));
+
+        CartItemUpdateRequest updateRequest = new CartItemUpdateRequest(999L, 5);
+        assertThrows(ProductNotFoundException.class, () -> {
+            cartService.updateItemQuantity(1L, updateRequest);
+        });
     }
 }
