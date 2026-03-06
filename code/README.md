@@ -1,26 +1,25 @@
-# Shopping Cart Management System
+# MyProject - Shopping Cart SpringBoot Application
 
 ## Overview
-This is a Spring Boot 3.5.9 application built with JDK 21 that implements a shopping cart management system. The application provides RESTful APIs for managing shopping cart operations including adding items, updating quantities, removing items, and clearing the cart.
+A complete SpringBoot 3.5.9 application implementing shopping cart functionality with JDK 21.
 
 ## Features
-- Add products to shopping cart
-- Update item quantities
+- Add items to cart
+- View cart contents
 - Remove items from cart
-- Clear entire cart
-- View cart contents with totals
-- Product stock validation
+- Update item quantities
 - Real-time cart total calculation
-- Session-based cart persistence
+- Product stock validation
+- Comprehensive error handling
 
 ## Technology Stack
 - **Java**: JDK 21
-- **Framework**: Spring Boot 3.5.9
-- **Database**: H2 (in-memory)
+- **Spring Boot**: 3.5.9
+- **Database**: H2 (In-Memory)
 - **Build Tool**: Maven
 - **Testing**: JUnit 5, Mockito
-- **API Documentation**: SpringDoc OpenAPI (Swagger)
 - **Code Coverage**: JaCoCo
+- **API Documentation**: SpringDoc OpenAPI (Swagger)
 
 ## Project Structure
 ```
@@ -28,202 +27,154 @@ code/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/myproject/
-│   │   │   ├── controllers/       # REST Controllers
-│   │   │   ├── services/          # Business Logic
-│   │   │   │   ├── interfaces/
-│   │   │   │   └── impl/
+│   │   │   ├── controllers/       # REST API Controllers
 │   │   │   ├── models/
-│   │   │   │   ├── entities/      # JPA Entities
-│   │   │   │   ├── dtos/          # Data Transfer Objects
-│   │   │   │   └── repositories/  # JPA Repositories
-│   │   │   ├── config/            # Configuration Classes
-│   │   │   ├── exceptions/        # Custom Exceptions
+│   │   │   │   ├── dtos/         # Data Transfer Objects
+│   │   │   │   ├── entities/     # JPA Entities
+│   │   │   │   └── repositories/ # JPA Repositories
+│   │   │   ├── services/
+│   │   │   │   ├── impl/         # Service Implementations
+│   │   │   │   └── interfaces/   # Service Interfaces
+│   │   │   ├── config/           # Configuration Classes
+│   │   │   ├── exceptions/       # Custom Exceptions
 │   │   │   └── MyprojectApplication.java
 │   │   └── resources/
 │   │       └── application.properties
-│   └── test/                      # Unit and Integration Tests
+│   └── test/                     # Unit and Integration Tests
 └── pom.xml
 ```
 
 ## API Endpoints
 
-### Cart Management
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/cart/add` | Add item to cart |
-| GET | `/api/cart` | Get cart contents |
-| PUT | `/api/cart/item/{productId}` | Update item quantity |
-| DELETE | `/api/cart/item/{productId}` | Remove item from cart |
-| DELETE | `/api/cart` | Clear entire cart |
+### 1. Add Item to Cart
+**POST** `/api/cart/add`
+```json
+{
+  "productId": 1,
+  "quantity": 2
+}
+```
 
-## Getting Started
+### 2. Get Cart
+**GET** `/api/cart`
+
+### 3. Remove Item from Cart
+**DELETE** `/api/cart/item`
+```json
+{
+  "productId": 1
+}
+```
+
+### 4. Update Item Quantity
+**PUT** `/api/cart/item`
+```json
+{
+  "productId": 1,
+  "quantity": 5
+}
+```
+
+## Running the Application
 
 ### Prerequisites
-- JDK 21
-- Maven 3.6+
+- JDK 21 installed
+- Maven 3.6+ installed
 
-### Running the Application
-
-1. Clone the repository:
+### Build and Run
 ```bash
-git clone https://github.com/loginkarun/bank.git
-cd bank/code
-```
-
-2. Build the project:
-```bash
+cd code
 mvn clean install
-```
-
-3. Run the application:
-```bash
 mvn spring-boot:run
 ```
 
-The application will start on `http://localhost:8080/api`
+The application will start on `http://localhost:8080`
 
-### Running Tests
+## Testing
 
+### Run Tests
 ```bash
+cd code
 mvn test
 ```
 
 ### Generate Coverage Report
-
 ```bash
+cd code
 mvn jacoco:report
 ```
-
 Coverage report will be available at: `target/site/jacoco/index.html`
 
 ## API Documentation
 
-Once the application is running, access the Swagger UI at:
-```
-http://localhost:8080/api/swagger-ui.html
-```
-
-OpenAPI specification available at:
-```
-http://localhost:8080/api/api-docs
-```
+Once the application is running, access:
+- **Swagger UI**: http://localhost:8080/api/swagger-ui.html
+- **API Docs**: http://localhost:8080/api/api-docs
 
 ## Database Console
 
-H2 Console is available at:
-```
-http://localhost:8080/api/h2-console
-```
-
-**Connection Details:**
-- JDBC URL: `jdbc:h2:mem:testdb`
-- Username: `sa`
-- Password: (empty)
+H2 Console is available at: http://localhost:8080/api/h2-console
+- **JDBC URL**: jdbc:h2:mem:cartdb
+- **Username**: sa
+- **Password**: (leave empty)
 
 ## Sample Products
 
-The application initializes with the following sample products:
-1. Wireless Mouse - $29.99 (50 in stock)
-2. Mechanical Keyboard - $89.99 (30 in stock)
-3. USB-C Hub - $45.50 (25 in stock)
-4. Laptop Stand - $35.00 (40 in stock)
-5. Webcam HD - $79.99 (20 in stock)
-
-## Testing the API
-
-### Add Item to Cart
-```bash
-curl -X POST http://localhost:8080/api/cart/add \
-  -H "Content-Type: application/json" \
-  -H "X-User-Id: 1" \
-  -d '{
-    "productId": 1,
-    "quantity": 2
-  }'
-```
-
-### Get Cart
-```bash
-curl -X GET http://localhost:8080/api/cart \
-  -H "X-User-Id: 1"
-```
-
-### Update Quantity
-```bash
-curl -X PUT http://localhost:8080/api/cart/item/1 \
-  -H "Content-Type: application/json" \
-  -H "X-User-Id: 1" \
-  -d '{
-    "quantity": 3
-  }'
-```
-
-### Remove Item
-```bash
-curl -X DELETE http://localhost:8080/api/cart/item/1 \
-  -H "X-User-Id: 1"
-```
-
-### Clear Cart
-```bash
-curl -X DELETE http://localhost:8080/api/cart \
-  -H "X-User-Id: 1"
-```
-
-## CORS Configuration
-
-CORS is configured to allow requests from:
-- `http://localhost:4200` (Angular development server)
-
-## Security
-
-- Session-based authentication (simplified for demo)
-- User ID passed via `X-User-Id` header
-- CSRF disabled for REST API
-- H2 console accessible in development mode
+The application initializes with sample products:
+1. Laptop - $999.99 (Stock: 10)
+2. Mouse - $29.99 (Stock: 50)
+3. Keyboard - $79.99 (Stock: 30)
+4. Monitor - $299.99 (Stock: 15)
+5. Headphones - $149.99 (Stock: 25)
 
 ## Error Handling
 
 The application provides structured error responses:
-
 ```json
 {
   "timestamp": "2024-01-15T10:30:00Z",
-  "traceId": "abc123-def456",
+  "traceId": "abc-123-def",
   "errorCode": "PRODUCT_NOT_FOUND",
-  "message": "Product not found with ID: 999",
-  "details": []
+  "message": "Product not found",
+  "details": [
+    {
+      "field": "productId",
+      "issue": "Product does not exist in database"
+    }
+  ]
 }
 ```
 
-## Validation Rules
+## CORS Configuration
 
-- Product ID: Must exist in database
-- Quantity: Must be >= 1 and <= available stock
-- User ID: Required for all cart operations
+CORS is enabled for Angular frontend integration:
+- **Allowed Origin**: http://localhost:4200
+- **Allowed Methods**: GET, POST, PUT, DELETE, OPTIONS, PATCH
+- **Allowed Headers**: All
+- **Credentials**: Enabled
 
-## CI/CD
+## Security
 
-GitHub Actions workflow is configured for:
-- Building the application
-- Running tests
-- Generating coverage reports
-- Uploading artifacts
+The application uses Spring Security with:
+- JWT token-based authentication (configured but permissive for demo)
+- All API endpoints are accessible for testing
+- Production deployment should enable proper authentication
 
-Workflow file: `.github/workflows/build.yml`
+## GitHub Actions Workflow
 
-## Contributing
+Automated build and test workflow is configured:
+- Builds on push to main branch
+- Runs all tests
+- Generates JaCoCo coverage report
+- Uploads test results and coverage artifacts
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+## LLD Reference
+
+This implementation is based on:
+- **JIRA Issue**: SCRUM-11692
+- **Feature**: Shopping Cart Add Item Feature
+- **LLD Document**: lld/lld_SCRUM-11692.md
 
 ## License
 
-This project is licensed under the MIT License.
-
-## Contact
-
-For questions or support, please open an issue in the GitHub repository.
+This project is part of the bank repository and follows its licensing terms.
