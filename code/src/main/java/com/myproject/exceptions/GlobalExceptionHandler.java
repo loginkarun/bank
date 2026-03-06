@@ -18,91 +18,69 @@ import java.util.UUID;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex, WebRequest request) {
-        List<ErrorDetail> details = new ArrayList<>();
-        
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            ErrorDetail detail = ErrorDetail.builder()
-                    .field(error.getField())
-                    .issue(error.getDefaultMessage())
-                    .build();
-            details.add(detail);
-        }
-        
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .traceId(UUID.randomUUID().toString())
-                .errorCode("VALIDATION_ERROR")
-                .message("Validation failed for the request")
-                .details(details)
-                .build();
-        
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
-
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleProductNotFoundException(ProductNotFoundException ex, WebRequest request) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .traceId(UUID.randomUUID().toString())
-                .errorCode("PRODUCT_NOT_FOUND")
-                .message(ex.getMessage())
-                .details(new ArrayList<>())
-                .build();
-        
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                UUID.randomUUID().toString(),
+                "PRODUCT_NOT_FOUND",
+                ex.getMessage()
+        );
+        List<ErrorDetail> details = new ArrayList<>();
+        details.add(new ErrorDetail("productId", "Product does not exist in database"));
+        errorResponse.setDetails(details);
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(OutOfStockException.class)
     public ResponseEntity<ErrorResponse> handleOutOfStockException(OutOfStockException ex, WebRequest request) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .traceId(UUID.randomUUID().toString())
-                .errorCode("OUT_OF_STOCK")
-                .message(ex.getMessage())
-                .details(new ArrayList<>())
-                .build();
-        
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                UUID.randomUUID().toString(),
+                "OUT_OF_STOCK",
+                ex.getMessage()
+        );
+        List<ErrorDetail> details = new ArrayList<>();
+        details.add(new ErrorDetail("productId", "Insufficient stock available"));
+        errorResponse.setDetails(details);
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
-    }
-
-    @ExceptionHandler(InvalidSessionException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidSessionException(InvalidSessionException ex, WebRequest request) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .traceId(UUID.randomUUID().toString())
-                .errorCode("INVALID_SESSION")
-                .message(ex.getMessage())
-                .details(new ArrayList<>())
-                .build();
-        
-        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(CartOperationException.class)
     public ResponseEntity<ErrorResponse> handleCartOperationException(CartOperationException ex, WebRequest request) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .traceId(UUID.randomUUID().toString())
-                .errorCode("CART_OPERATION_ERROR")
-                .message(ex.getMessage())
-                .details(new ArrayList<>())
-                .build();
-        
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                UUID.randomUUID().toString(),
+                "CART_OPERATION_ERROR",
+                ex.getMessage()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        List<ErrorDetail> details = new ArrayList<>();
+        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+            details.add(new ErrorDetail(error.getField(), error.getDefaultMessage()));
+        }
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                UUID.randomUUID().toString(),
+                "VALIDATION_ERROR",
+                "Invalid request data"
+        );
+        errorResponse.setDetails(details);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .traceId(UUID.randomUUID().toString())
-                .errorCode("INTERNAL_SERVER_ERROR")
-                .message("An unexpected error occurred: " + ex.getMessage())
-                .details(new ArrayList<>())
-                .build();
-        
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                UUID.randomUUID().toString(),
+                "INTERNAL_SERVER_ERROR",
+                "An unexpected error occurred"
+        );
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
