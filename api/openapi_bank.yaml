@@ -1,0 +1,375 @@
+openapi: 3.0.3
+info:
+  title: bank API
+  version: 1.0.0
+  description: Generated from LLD batch - Shopping Cart Management API
+servers:
+  - url: https://example.com
+    description: Production server
+tags:
+  - name: Cart Management
+    description: Operations for managing shopping cart
+paths:
+  /api/cart/add:
+    post:
+      tags:
+        - Cart Management
+      summary: Add item to shopping cart
+      description: Adds a product to the user's shopping cart. If the product already exists in the cart, increments the quantity.
+      operationId: SCRUM-11692_addToCart_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemAddRequest'
+      responses:
+        '201':
+          description: Item successfully added to cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          description: Invalid request - validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Product out of stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - sessionToken: []
+  /api/cart:
+    get:
+      tags:
+        - Cart Management
+      summary: Get shopping cart
+      description: Retrieves the current user's shopping cart with all items, quantities, prices, and total.
+      operationId: SCRUM-11692_getCart_get
+      responses:
+        '200':
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '401':
+          description: Unauthorized - invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - sessionToken: []
+    delete:
+      tags:
+        - Cart Management
+      summary: Clear shopping cart
+      description: Removes all items from the user's shopping cart.
+      operationId: SCRUM-11692_clearCart_delete
+      responses:
+        '200':
+          description: Cart cleared successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '401':
+          description: Unauthorized - invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - sessionToken: []
+  /api/cart/item/{productId}:
+    delete:
+      tags:
+        - Cart Management
+      summary: Remove item from cart
+      description: Removes a specific product from the shopping cart.
+      operationId: SCRUM-11692_removeFromCart_delete
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: ID of the product to remove from cart
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Item removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '404':
+          description: Product not found in cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - sessionToken: []
+    put:
+      tags:
+        - Cart Management
+      summary: Update item quantity in cart
+      description: Updates the quantity of a specific product in the shopping cart.
+      operationId: SCRUM-11692_updateQuantity_put
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: ID of the product to update
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQuantityRequest'
+      responses:
+        '200':
+          description: Quantity updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          description: Invalid quantity or out of stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found in cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - sessionToken: []
+components:
+  schemas:
+    CartItemAddRequest:
+      type: object
+      required:
+        - productId
+        - quantity
+      properties:
+        productId:
+          type: integer
+          format: int64
+          description: ID of the product to add to cart
+          example: 12345
+        quantity:
+          type: integer
+          minimum: 1
+          description: Quantity of the product to add
+          example: 1
+        userId:
+          type: integer
+          format: int64
+          description: ID of the user (from session)
+          example: 67890
+    UpdateQuantityRequest:
+      type: object
+      required:
+        - quantity
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          description: New quantity for the product
+          example: 3
+    CartResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Cart ID
+          example: 1
+        userId:
+          type: integer
+          format: int64
+          description: User ID who owns the cart
+          example: 67890
+        items:
+          type: array
+          description: List of items in the cart
+          items:
+            $ref: '#/components/schemas/CartItem'
+        totalPrice:
+          type: number
+          format: double
+          description: Total price of all items in cart
+          example: 299.99
+        itemCount:
+          type: integer
+          description: Total number of items in cart
+          example: 5
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Cart item ID
+          example: 101
+        productId:
+          type: integer
+          format: int64
+          description: Product ID
+          example: 12345
+        productName:
+          type: string
+          description: Name of the product
+          example: Wireless Mouse
+        quantity:
+          type: integer
+          minimum: 1
+          description: Quantity of this product in cart
+          example: 2
+        price:
+          type: number
+          format: double
+          description: Unit price of the product
+          example: 29.99
+        subtotal:
+          type: number
+          format: double
+          description: Subtotal for this item (quantity * price)
+          example: 59.98
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - traceId
+        - errorCode
+        - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when error occurred
+          example: 2024-01-15T10:30:00Z
+        traceId:
+          type: string
+          description: Unique trace ID for debugging
+          example: abc123-def456-ghi789
+        errorCode:
+          type: string
+          description: Application-specific error code
+          example: PRODUCT_NOT_FOUND
+        message:
+          type: string
+          description: Human-readable error message
+          example: Product not found
+        details:
+          type: array
+          description: Additional error details
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Field name that caused the error
+          example: productId
+        issue:
+          type: string
+          description: Description of the issue
+          example: Product does not exist in database
+  securitySchemes:
+    sessionToken:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Session token for authenticated requests (JWT or HTTP session)
+  parameters:
+    productIdParam:
+      name: productId
+      in: path
+      required: true
+      description: Product identifier
+      schema:
+        type: integer
+        format: int64
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFoundError:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Validation failed for the request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
