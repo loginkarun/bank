@@ -9,49 +9,22 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
+    private final ProductRepository productRepository;
+
     @Autowired
-    private ProductRepository productRepository;
+    public DataInitializer(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
 
     @Override
     public void run(String... args) throws Exception {
-        // Initialize sample products
+        // Initialize sample products for testing
         if (productRepository.count() == 0) {
-            productRepository.save(Product.builder()
-                    .name("Wireless Mouse")
-                    .price(29.99)
-                    .stock(50)
-                    .available(true)
-                    .build());
-
-            productRepository.save(Product.builder()
-                    .name("Mechanical Keyboard")
-                    .price(89.99)
-                    .stock(30)
-                    .available(true)
-                    .build());
-
-            productRepository.save(Product.builder()
-                    .name("USB-C Hub")
-                    .price(45.50)
-                    .stock(25)
-                    .available(true)
-                    .build());
-
-            productRepository.save(Product.builder()
-                    .name("Laptop Stand")
-                    .price(35.00)
-                    .stock(40)
-                    .available(true)
-                    .build());
-
-            productRepository.save(Product.builder()
-                    .name("Webcam HD")
-                    .price(79.99)
-                    .stock(20)
-                    .available(true)
-                    .build());
-
-            System.out.println("Sample products initialized successfully!");
+            productRepository.save(new Product(null, "Laptop", 999.99, 10));
+            productRepository.save(new Product(null, "Mouse", 29.99, 50));
+            productRepository.save(new Product(null, "Keyboard", 79.99, 30));
+            productRepository.save(new Product(null, "Monitor", 299.99, 15));
+            productRepository.save(new Product(null, "Headphones", 149.99, 25));
         }
     }
 }
